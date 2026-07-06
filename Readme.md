@@ -241,9 +241,7 @@ streamlit run app.py
 
 Computer Science & Engineering (AI & ML)
 
-GitHub: https://github.com/your-username
 
-LinkedIn: https://linkedin.com/in/your-profile
 
 ---
 
