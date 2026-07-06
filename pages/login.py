@@ -1,32 +1,48 @@
 import streamlit as st
+
 from services.auth_services import login_user
 
-st.title("🔐 Login to HealthHive AI")
+st.title("🔐 Login")
+
+st.write("Login to your HealthHive account.")
 
 with st.form("login_form"):
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    username = st.text_input("Username")
 
-    submitted = st.form_submit_button("Login")
+    password = st.text_input(
+        "Password",
+        type="password",
+    )
 
-    if submitted:
+    submitted = st.form_submit_button(
+        "Login",
+        use_container_width=True,
+    )
 
-        email = email.strip().lower()
+if submitted:
 
-        if not email or not password:
-            st.error("Please fill in all fields.")
+    if not username.strip():
+
+        st.error("Please enter your username.")
+
+    elif not password:
+
+        st.error("Please enter your password.")
+
+    else:
+
+        success, result = login_user(
+            username=username,
+            password=password,
+        )
+
+        if success:
+
+            st.success("✅ Login Successful!")
+
+            st.rerun()
 
         else:
-            success, result = login_user(email, password)
 
-            if success:
-                st.session_state.logged_in = True
-                st.session_state.user = result
-
-                st.success("Login successful!")
-
-                st.rerun()
-
-            else:
-                st.error(result)
+            st.error(result)

@@ -1,6 +1,11 @@
 import streamlit as st
-from agents.daily_breif_agent import daily_brief_agent
-from services.profile_service import get_latest_profile
+
+from services.core_serive import (
+    require_login,
+    get_current_profile,
+    is_profile_complete,
+)
+
 from utils.health_calculator import (
     calculate_bmi,
     bmi_category,
@@ -8,29 +13,52 @@ from utils.health_calculator import (
     daily_protein,
     daily_water,
 )
+
 from agents.daily_breif_agent import daily_brief_agent
 
 from services.daily_breif_service import (
     get_today_brief,
     save_today_brief,
 )
+
+st.set_page_config(
+    page_title="Dashboard",
+    page_icon="🏥",
+)
+
+# ======================================================
+# Authentication
+# ======================================================
+
+user = require_login()
+profile = get_current_profile()
+
 st.title("🏥 HealthHive AI Dashboard")
+st.write(f"Welcome back, **{user['full_name']}** 👋")
 
-profile = get_latest_profile()
+# ======================================================
+# Profile Completion Check
+# ======================================================
 
-if not profile:
-    st.warning("⚠️ Please create your profile first.")
+if not is_profile_complete(profile):
+
+    st.warning(
+        "⚠️ Please complete your health profile before using the dashboard."
+    )
+
+    st.page_link(
+        "pages/profile.py",
+        label="👤 Complete Profile",
+        icon="👤",
+    )
+
     st.stop()
 
-# ---------------- USER INFO ---------------- #
+# ======================================================
+# Profile Summary
+# ======================================================
 
-st.subheader(f"👋 Welcome, {profile['full_name']}")
-
-st.write("Your personalized AI health dashboard.")
-
-st.divider()
-
-# ---------------- PROFILE SUMMARY ---------------- #
+st.subheader("📋 Profile Summary")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -41,7 +69,9 @@ col4.metric("🏃 Activity", profile["activity"])
 
 st.divider()
 
-# ---------------- HEALTH CALCULATIONS ---------------- #
+# ======================================================
+# Health Metrics
+# ======================================================
 
 bmi = calculate_bmi(
     profile["height"],
@@ -67,14 +97,14 @@ water = daily_water(
     profile["weight"],
 )
 
+st.subheader("📊 Health Metrics")
+
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("❤️ BMI", bmi)
-col2.metric("📊 BMI Status", category)
-col3.metric("🔥 Calories", f"{calories} kcal")
+col2.metric("📈 BMI Status", category)
+col3.metric("🔥 Daily Calories", f"{calories} kcal")
 col4.metric("💪 Protein", f"{protein} g/day")
-
-st.divider()
 
 col1, col2 = st.columns(2)
 
@@ -83,11 +113,13 @@ col2.metric("🎂 Age", profile["age"])
 
 st.divider()
 
-# ---------------- AI SUMMARY ---------------- #
+# ======================================================
+# Daily AI Brief
+# ======================================================
 
-st.subheader("🤖 Today's AI Health Brief")
+st.subheader("🧠 Today's AI Health Brief")
 
-today_brief = get_today_brief(profile["id"])
+today_brief = get_today_brief(user["id"])
 
 if today_brief:
 
@@ -95,12 +127,15 @@ if today_brief:
 
 else:
 
-    with st.spinner("Generating today's AI brief..."):
+    with st.spinner("Generating today's personalized AI brief..."):
 
-        brief = daily_brief_agent(profile)
+        brief = daily_brief_agent(
+            user=user,
+            profile=profile,
+        )
 
         save_today_brief(
-            profile["id"],
+            user["id"],
             brief,
         )
 

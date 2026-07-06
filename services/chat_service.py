@@ -1,9 +1,9 @@
 from config.supabase_client import supabase
 
 
-def save_chat(profile_id: str, role: str, message: str):
+def save_chat(user_id: str, role: str, message: str):
     """
-    Save one chat message.
+    Save one chat message for the logged-in user.
     """
 
     return (
@@ -11,7 +11,7 @@ def save_chat(profile_id: str, role: str, message: str):
         .table("chat_history")
         .insert(
             {
-                "profile_id": profile_id,
+                "user_id": user_id,
                 "role": role,
                 "message": message,
             }
@@ -20,16 +20,16 @@ def save_chat(profile_id: str, role: str, message: str):
     )
 
 
-def load_chat(profile_id: str):
+def load_chat(user_id: str):
     """
-    Load all chats for a user.
+    Load chat history of the logged-in user.
     """
 
     response = (
         supabase
         .table("chat_history")
         .select("*")
-        .eq("profile_id", profile_id)
+        .eq("user_id", user_id)
         .order("created_at")
         .execute()
     )
@@ -37,15 +37,15 @@ def load_chat(profile_id: str):
     return response.data
 
 
-def clear_chat(profile_id: str):
+def clear_chat(user_id: str):
     """
-    Delete all chats for a user.
+    Delete all chats of the logged-in user.
     """
 
     return (
         supabase
         .table("chat_history")
         .delete()
-        .eq("profile_id", profile_id)
+        .eq("user_id", user_id)
         .execute()
     )

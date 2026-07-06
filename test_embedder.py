@@ -1,13 +1,31 @@
-from utils.health_calculator import *
+from utils.password_utils import (
+    hash_password,
+    verify_password,
+)
 
-print(calculate_bmi(170, 74))
-print(bmi_category(calculate_bmi(170, 74)))
-print(daily_water(74))
-print(daily_protein(74, "Muscle Gain"))
-print(daily_calories(
-    74,
-    170,
-    22,
-    "Male",
-    "Lightly Active"
-))
+password = "vikas@123"
+
+hashed = hash_password(password)
+
+print("Hash:")
+print(hashed)
+
+print()
+
+print("Correct Password:")
+print(
+    verify_password(
+        "vikas@123",
+        hashed,
+    )
+)
+
+print()
+
+print("Wrong Password:")
+print(
+    verify_password(
+        "hello",
+        hashed,
+    )
+)

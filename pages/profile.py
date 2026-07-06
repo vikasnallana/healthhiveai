@@ -1,14 +1,22 @@
 import streamlit as st
 
-from services.profile_service import (
-    save_or_update_profile,
-    get_latest_profile,
+from services.core_serive import (
+    require_login,
+    get_current_profile,
 )
+
+from services.profile_service import save_or_update_profile
 
 st.set_page_config(
     page_title="My Profile",
     page_icon="👤",
 )
+
+user = require_login()
+profile = get_current_profile()
+
+if profile is None:
+    profile = {}
 
 st.title("👤 My Health Profile")
 
@@ -16,18 +24,7 @@ st.write(
     "Update your personal information to receive personalized AI recommendations."
 )
 
-# =====================================================
-# Load Existing Profile
-# =====================================================
-
-existing_profile = get_latest_profile()
-
-if existing_profile is None:
-    existing_profile = {}
-
-# =====================================================
-# Options
-# =====================================================
+st.info(f"Logged in as: **{user['full_name']}** (@{user['username']})")
 
 gender_options = [
     "Male",
@@ -55,30 +52,20 @@ food_options = [
     "Vegan",
 ]
 
-# =====================================================
-# Profile Form
-# =====================================================
-
 with st.form("profile_form"):
-
-    name = st.text_input(
-        "Full Name",
-        value=existing_profile.get("full_name", ""),
-    )
 
     age = st.number_input(
         "Age",
         min_value=1,
         max_value=120,
-        value=int(existing_profile.get("age", 18)),
-        step=1,
+        value=int(profile.get("age") or 18),
     )
 
     gender = st.selectbox(
         "Gender",
         gender_options,
         index=gender_options.index(
-            existing_profile.get("gender", "Male")
+            profile.get("gender") or "Male"
         ),
     )
 
@@ -86,23 +73,21 @@ with st.form("profile_form"):
         "Height (cm)",
         min_value=50,
         max_value=250,
-        value=int(existing_profile.get("height", 170)),
-        step=1,
+        value=int(profile.get("height") or 170),
     )
 
     weight = st.number_input(
         "Weight (kg)",
         min_value=20,
         max_value=300,
-        value=int(existing_profile.get("weight", 60)),
-        step=1,
+        value=int(profile.get("weight") or 60),
     )
 
     goal = st.selectbox(
-        "Fitness Goal",
+        "Goal",
         goal_options,
         index=goal_options.index(
-            existing_profile.get("goal", "General Fitness")
+            profile.get("goal") or "General Fitness"
         ),
     )
 
@@ -110,7 +95,7 @@ with st.form("profile_form"):
         "Activity Level",
         activity_options,
         index=activity_options.index(
-            existing_profile.get("activity", "Sedentary")
+            profile.get("activity") or "Sedentary"
         ),
     )
 
@@ -118,16 +103,13 @@ with st.form("profile_form"):
         "Food Preference",
         food_options,
         index=food_options.index(
-            existing_profile.get("food_preference", "Vegetarian")
+            profile.get("food_preference") or "Vegetarian"
         ),
     )
 
     medical_conditions = st.text_area(
-        "Medical Conditions (Optional)",
-        value=existing_profile.get(
-            "medical_conditions",
-            "",
-        ),
+        "Medical Conditions",
+        value=profile.get("medical_conditions") or "",
     )
 
     submitted = st.form_submit_button(
@@ -135,63 +117,53 @@ with st.form("profile_form"):
         use_container_width=True,
     )
 
-    if submitted:
+if submitted:
 
-        profile = {
-            "full_name": name.strip(),
-            "age": age,
-            "gender": gender,
-            "height": height,
-            "weight": weight,
-            "goal": goal,
-            "activity": activity,
-            "food_preference": food_preference,
-            "medical_conditions": medical_conditions.strip(),
-        }
+    profile_data = {
+        "age": age,
+        "gender": gender,
+        "height": height,
+        "weight": weight,
+        "goal": goal,
+        "activity": activity,
+        "food_preference": food_preference,
+        "medical_conditions": medical_conditions.strip(),
+    }
 
-        try:
+    try:
 
-            save_or_update_profile(profile)
+        save_or_update_profile(
+            user["id"],
+            profile_data,
+        )
 
-            st.success("✅ Profile updated successfully!")
+        st.success("✅ Profile Updated Successfully!")
 
-            st.rerun()
+        st.rerun()
 
-        except Exception as e:
+    except Exception as e:
 
-            st.error(f"❌ {e}")
-
-# =====================================================
-# Display Profile
-# =====================================================
+        st.error(e)
 
 st.divider()
 
-profile = get_latest_profile()
+st.subheader("📋 Current Profile")
 
-if profile:
+col1, col2 = st.columns(2)
 
-    st.subheader("📋 Current Profile")
+with col1:
 
-    col1, col2 = st.columns(2)
+    st.metric("👤 Name", user["full_name"])
+    st.metric("🎂 Age", profile.get("age") or "-")
+    st.metric("📏 Height", f"{profile.get('height') or '-'} cm")
+    st.metric("⚖️ Weight", f"{profile.get('weight') or '-'} kg")
 
-    with col1:
+with col2:
 
-        st.metric("👤 Name", profile["full_name"])
-        st.metric("🎂 Age", profile["age"])
-        st.metric("📏 Height", f"{profile['height']} cm")
-        st.metric("⚖️ Weight", f"{profile['weight']} kg")
-
-    with col2:
-
-        st.metric("🎯 Goal", profile["goal"])
-        st.metric("🏃 Activity", profile["activity"])
-        st.metric("🥗 Food Preference", profile["food_preference"])
-        st.metric(
-            "⚕️ Medical Conditions",
-            profile["medical_conditions"] or "None",
-        )
-
-else:
-
-    st.info("No profile found. Please create your profile.")
+    st.metric("🎯 Goal", profile.get("goal") or "-")
+    st.metric("🏃 Activity", profile.get("activity") or "-")
+    st.metric("🥗 Food Preference", profile.get("food_preference") or "-")
+    st.metric(
+        "⚕️ Medical Conditions",
+        profile.get("medical_conditions") or "None",
+    )

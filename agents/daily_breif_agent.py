@@ -1,7 +1,7 @@
 from services.gemini_service import ask_gemini
 
 
-def daily_brief_agent(profile: dict) -> str:
+def daily_brief_agent(user: dict, profile: dict) -> str:
     """
     Generates a personalized daily health brief.
     """
@@ -11,9 +11,13 @@ You are HealthHive AI.
 
 Generate a personalized Daily Health Brief.
 
-User Profile
+User Information
 
-Name: {profile["full_name"]}
+Name: {user["full_name"]}
+Username: {user["username"]}
+
+Health Profile
+
 Age: {profile["age"]}
 Gender: {profile["gender"]}
 Height: {profile["height"]} cm
@@ -23,7 +27,7 @@ Activity Level: {profile["activity"]}
 Food Preference: {profile["food_preference"]}
 Medical Conditions: {profile["medical_conditions"]}
 
-Create today's plan in the following format:
+Create today's plan in this format:
 
 🌞 Good Morning
 
@@ -43,7 +47,12 @@ Create today's plan in the following format:
 
 🌟 Motivation
 
-Keep the response concise, practical, and motivating.
+Keep the response:
+- Personalized
+- Practical
+- Motivating
+- Easy to follow
+- Under 400 words.
 """
 
     return ask_gemini(prompt)
