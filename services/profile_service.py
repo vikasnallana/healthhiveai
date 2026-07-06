@@ -1,17 +1,51 @@
-import streamlit as st
+from config.supabase_client import supabase
 
 
-def save_profile(profile_data: dict):
+def get_latest_profile():
     """
-    Saves the user's profile in Streamlit Session State.
-    """
-
-    st.session_state["profile"] = profile_data
-
-
-def get_profile():
-    """
-    Returns the user's profile.
+    Returns the most recently saved profile.
     """
 
-    return st.session_state.get("profile", None)
+    response = (
+        supabase
+        .table("profiles")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    if response.data:
+        return response.data[0]
+
+    return None
+
+
+def save_or_update_profile(profile_data: dict):
+    """
+    Inserts a new profile if none exists,
+    otherwise updates the existing profile.
+    """
+
+    existing = get_latest_profile()
+
+    if existing:
+
+        response = (
+            supabase
+            .table("profiles")
+            .update(profile_data)
+            .eq("id", existing["id"])
+            .execute()
+        )
+
+    else:
+
+        response = (
+            supabase
+            .table("profiles")
+            .insert(profile_data)
+            .execute()
+        )
+
+    return response

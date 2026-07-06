@@ -24,13 +24,17 @@ profile_page = st.Page(
     title="Profile",
     icon="👤",
 )
-
-pg = st.navigation(
-    [
-        home_page,
-        dashboard_page,
-        profile_page,
-    ]
+chat_page = st.Page(
+    "pages/chat.py",
+    title="AI Chat + RAG",
+    icon="🤖",
 )
+
+pg = st.navigation([
+    home_page,
+    dashboard_page,
+    profile_page,
+    chat_page,
+])
 
 pg.run()

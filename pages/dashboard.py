@@ -1,103 +1,107 @@
 import streamlit as st
-from agents.manager_agent import manager_agent
-st.set_page_config(
-    page_title="Dashboard",
-    page_icon="🏥",
-    layout="wide"
+from agents.daily_breif_agent import daily_brief_agent
+from services.profile_service import get_latest_profile
+from utils.health_calculator import (
+    calculate_bmi,
+    bmi_category,
+    daily_calories,
+    daily_protein,
+    daily_water,
 )
+from agents.daily_breif_agent import daily_brief_agent
 
-# ---------------- HEADER ---------------- #
+from services.daily_breif_service import (
+    get_today_brief,
+    save_today_brief,
+)
+st.title("🏥 HealthHive AI Dashboard")
 
-st.title("🏥 HealthHive AI")
+profile = get_latest_profile()
 
-st.markdown("### 👋 Good Afternoon!")
+if not profile:
+    st.warning("⚠️ Please create your profile first.")
+    st.stop()
 
-st.write("Welcome back to your Personal AI Health Coach.")
+# ---------------- USER INFO ---------------- #
+
+st.subheader(f"👋 Welcome, {profile['full_name']}")
+
+st.write("Your personalized AI health dashboard.")
 
 st.divider()
 
-# ---------------- TODAY'S AI BRIEF ---------------- #
+# ---------------- PROFILE SUMMARY ---------------- #
 
-st.subheader("🤖 Today's AI Brief")
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("⚖️ Weight", f"{profile['weight']} kg")
+col2.metric("📏 Height", f"{profile['height']} cm")
+col3.metric("🎯 Goal", profile["goal"])
+col4.metric("🏃 Activity", profile["activity"])
+
+st.divider()
+
+# ---------------- HEALTH CALCULATIONS ---------------- #
+
+bmi = calculate_bmi(
+    profile["height"],
+    profile["weight"],
+)
+
+category = bmi_category(bmi)
+
+calories = daily_calories(
+    profile["weight"],
+    profile["height"],
+    profile["age"],
+    profile["gender"],
+    profile["activity"],
+)
+
+protein = daily_protein(
+    profile["weight"],
+    profile["goal"],
+)
+
+water = daily_water(
+    profile["weight"],
+)
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("❤️ BMI", bmi)
+col2.metric("📊 BMI Status", category)
+col3.metric("🔥 Calories", f"{calories} kcal")
+col4.metric("💪 Protein", f"{protein} g/day")
+
+st.divider()
 
 col1, col2 = st.columns(2)
 
-with col1:
-    st.info("🥣 **Breakfast**\n\nOats + Milk + Banana")
-
-    st.info("🍛 **Lunch**\n\nRice + Chicken + Vegetables")
-
-    st.info("🍎 **Evening Snack**\n\nApple + Nuts")
-
-with col2:
-    st.info("🏋 **Workout**\n\nPush Day - 45 Minutes")
-
-    st.info("💧 **Water Goal**\n\nDrink 3 Litres")
-
-    st.info("😴 **Sleep Goal**\n\nSleep before 11 PM")
+col1.metric("💧 Water Intake", f"{water} L/day")
+col2.metric("🎂 Age", profile["age"])
 
 st.divider()
 
-# ---------------- AI CHAT ---------------- #
+# ---------------- AI SUMMARY ---------------- #
 
+st.subheader("🤖 Today's AI Health Brief")
 
+today_brief = get_today_brief(profile["id"])
 
-st.divider()
+if today_brief:
 
-st.subheader("💬 AI Health Chat")
+    st.success(today_brief["brief"])
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+else:
 
-# Display chat history
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    with st.spinner("Generating today's AI brief..."):
 
-# Chat input
-if prompt := st.chat_input("Ask your health question..."):
+        brief = daily_brief_agent(profile)
 
-    # User message
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": prompt
-        }
-    )
+        save_today_brief(
+            profile["id"],
+            brief,
+        )
 
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # AI Response
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            response = manager_agent(prompt)
-            st.markdown(response)
-
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": response
-        }
-    )
-st.divider()
-
-# ---------------- QUICK SUGGESTIONS ---------------- #
-
-# st.subheader("✨ Today's Health Suggestions")
-
-# st.success("🥗 Eat at least 120g of protein today.")
-
-# st.success("🚶 Walk at least 6000 steps.")
-
-# st.success("💧 Drink 3 litres of water.")
-
-# st.success("😴 Sleep for 7–8 hours.")
-
-# st.success("🏋 Complete today's workout.")
-
-# st.divider()
-
-# ---------------- FOOTER ---------------- #
-
-st.caption("HealthHive AI • Powered by Gemini + CrewAI + RAG")
+    st.success(brief)
